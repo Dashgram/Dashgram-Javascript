@@ -1,0 +1,50 @@
+{
+  "name": "@dashgram/javascript",
+  "version": "1.0.0",
+  "description": "Dashgram Analytics SDK for Telegram Mini Apps",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "dashgram",
+    "analytics",
+    "telegram",
+    "mini-apps",
+    "tracking",
+    "telegram-mini-app",
+    "webapp",
+    "analytics-sdk"
+  ],
+  "author": "Dashgram",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dashgram/dashgram-javascript.git"
+  },
+  "bugs": {
+    "url": "https://github.com/dashgram/dashgram-javascript/issues"
+  },
+  "homepage": "https://github.com/dashgram/dashgram-javascript#readme",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
