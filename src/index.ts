@@ -27,18 +27,27 @@ class DashgramSDK {
    */
   init(userConfig: DashgramConfig): void {
     if (this.isInitialized) {
-      console.warn("Dashgram: Already initialized")
+      if (userConfig.debug) {
+        console.warn("Dashgram: Already initialized")
+      }
       return
     }
 
     if (!isBrowser()) {
-      console.warn("Dashgram: Not running in browser environment")
+      if (userConfig.debug) {
+        console.warn("Dashgram: Not running in browser environment")
+      }
       return
     }
 
     try {
       // Initialize core components
       this.config = new Config(userConfig)
+
+      // Set debug flag for global access (used by telegram.ts)
+      if (typeof window !== "undefined") {
+        ;(window as any).__DASHGRAM_DEBUG__ = this.config.isDebug()
+      }
       this.context = new Context()
       this.session = new Session()
       this.transport = new Transport(this.config)

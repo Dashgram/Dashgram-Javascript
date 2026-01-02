@@ -121,6 +121,7 @@ export type UserTraits = Record<string, any>
 
 /**
  * Telegram WebApp interface (simplified)
+ * Based on official Telegram Mini Apps API
  */
 export interface TelegramWebApp {
   initDataUnsafe?: {
@@ -135,8 +136,100 @@ export interface TelegramWebApp {
   platform?: string
   version?: string
   themeParams?: Record<string, string>
-  onEvent?: (event: string, callback: () => void) => void
-  offEvent?: (event: string, callback: () => void) => void
+  colorScheme?: "light" | "dark"
+  isExpanded?: boolean
+  viewportHeight?: number
+  viewportStableHeight?: number
+
+  // Safe area insets (Bot API 7.10+)
+  safeAreaInset?: {
+    top: number
+    bottom: number
+    left: number
+    right: number
+  }
+  contentSafeAreaInset?: {
+    top: number
+    bottom: number
+    left: number
+    right: number
+  }
+
+  // Main and Secondary buttons
+  MainButton?: {
+    text?: string
+    isVisible?: boolean
+    isActive?: boolean
+    isProgressVisible?: boolean
+  }
+  SecondaryButton?: {
+    text?: string
+    isVisible?: boolean
+    isActive?: boolean
+    isProgressVisible?: boolean
+  }
+
+  // Biometric manager (Bot API 7.2+)
+  BiometricManager?: {
+    isInited?: boolean
+    isBiometricAvailable?: boolean
+    biometricType?: "finger" | "face" | "unknown"
+    isAccessRequested?: boolean
+    isAccessGranted?: boolean
+    isBiometricTokenSaved?: boolean
+    deviceId?: string
+  }
+
+  // Location manager (Bot API 8.0+)
+  LocationManager?: {
+    isInited?: boolean
+    isLocationAvailable?: boolean
+    isAccessRequested?: boolean
+    isAccessGranted?: boolean
+  }
+
+  // Accelerometer (Bot API 8.0+)
+  Accelerometer?: {
+    isStarted?: boolean
+    x?: number
+    y?: number
+    z?: number
+  }
+
+  // Gyroscope (Bot API 8.0+)
+  Gyroscope?: {
+    isStarted?: boolean
+    x?: number
+    y?: number
+    z?: number
+  }
+
+  // Device orientation (Bot API 8.0+)
+  DeviceOrientation?: {
+    isStarted?: boolean
+    absolute?: boolean
+    alpha?: number
+    beta?: number
+    gamma?: number
+  }
+
+  // Event methods
+  onEvent?: (event: string, callback: (eventType: string, eventData?: any) => void) => void
+  offEvent?: (event: string, callback: (eventType: string, eventData?: any) => void) => void
+
+  // Methods (used for patching)
+  openLink?: (url: string, options?: { try_instant_view?: boolean }) => void
+  openTelegramLink?: (url: string) => void
+  switchInlineQuery?: (query: string, chooseChatTypes?: string[]) => void
+  shareToStory?: (mediaUrl: string, params?: any) => void
+  close?: (options?: { return_back?: boolean }) => void
+  exitFullscreen?: () => void
+  openInvoice?: (slug: string, callback?: (status: string) => void) => void
+  requestAccess?: (accessType: string, callback?: (status: string) => void) => void
+  requestContact?: (callback?: (status: string) => void) => void
+  requestPhone?: (callback?: (status: string) => void) => void
+  requestLocation?: (callback?: (status: string, location?: any) => void) => void
+  checkLocation?: (callback?: (isAvailable: boolean, location?: any) => void) => void
 }
 
 /**
