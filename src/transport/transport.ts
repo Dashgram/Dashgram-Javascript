@@ -1,6 +1,6 @@
 import type { WebAppEvent, WebAppTrackRequest } from "../types"
 import type { Config } from "../core/config"
-import { safeStringify } from "../utils/helpers"
+import { safeStringify, convertToSnakeCase } from "../utils/helpers"
 import { DashgramAPIError, NetworkError } from "../errors"
 import { getLibraryOrigin } from "../utils/device"
 
@@ -39,13 +39,15 @@ export class Transport {
   }
 
   /**
-   * Build request payload
+   * Build request payload and convert to snake_case for backend
    */
-  private buildPayload(events: WebAppEvent[]): WebAppTrackRequest {
-    return {
+  private buildPayload(events: WebAppEvent[]): unknown {
+    const payload: WebAppTrackRequest = {
       origin: getLibraryOrigin(),
       updates: events
     }
+    // Convert all keys to snake_case for backend compatibility
+    return convertToSnakeCase(payload)
   }
 
   /**
