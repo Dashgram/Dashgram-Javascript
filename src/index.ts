@@ -8,6 +8,8 @@ import { InteractionTracker } from "./trackers/interaction-tracker"
 import { DeepTracker } from "./trackers/deep-tracker"
 import { generateUUID, isBrowser } from "./utils/helpers"
 import { getTelegramInitData } from "./utils/telegram"
+import { UserTraits } from "@dashgram/javascript"
+import { DashgramEvent } from "@dashgram/javascript"
 
 /**
  * Main Dashgram SDK class
@@ -208,6 +210,15 @@ class DashgramSDK {
 
 // Create singleton instance
 const DashgramMini = new DashgramSDK()
+
+// Export types
+export type { DashgramConfig, DashgramEvent, EventProperties, UserTraits, TrackLevel }
+
+// Export error classes
+export { DashgramError, DashgramAPIError, NetworkError, DashgramConfigurationError } from "./errors"
+
+// Export singleton
+export { DashgramMini }
 
 // Default export
 export default DashgramMini
