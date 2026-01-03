@@ -1,6 +1,6 @@
 {
   "name": "@dashgram/javascript",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Dashgram Analytics SDK for Telegram Mini Apps",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
