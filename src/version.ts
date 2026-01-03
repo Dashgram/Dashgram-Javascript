@@ -4,5 +4,5 @@
  */
 
 export const LIBRARY_NAME = "@dashgram/javascript"
-export const LIBRARY_VERSION = "1.0.10"
-export const LIBRARY_ORIGIN = "@dashgram/javascript@1.0.10"
+export const LIBRARY_VERSION = "1.0.9"
+export const LIBRARY_ORIGIN = "@dashgram/javascript@1.0.9"
