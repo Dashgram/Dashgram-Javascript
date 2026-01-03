@@ -217,8 +217,5 @@ export type { DashgramConfig, DashgramEvent, EventProperties, UserTraits, TrackL
 // Export error classes
 export { DashgramError, DashgramAPIError, NetworkError, DashgramConfigurationError } from "./errors"
 
-// Export singleton
-export { DashgramMini }
-
-// Default export
+// Default export (this becomes the global DashgramMini in UMD bundle)
 export default DashgramMini
