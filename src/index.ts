@@ -7,7 +7,7 @@ import { CoreTracker } from "./trackers/core-tracker"
 import { InteractionTracker } from "./trackers/interaction-tracker"
 import { DeepTracker } from "./trackers/deep-tracker"
 import { generateUUID, isBrowser } from "./utils/helpers"
-import { getTelegramInitData } from "./utils/telegram"
+import { getTelegramUnsafeInitData } from "./utils/telegram"
 import { UserTraits } from "@dashgram/javascript"
 import { DashgramEvent } from "@dashgram/javascript"
 
@@ -130,7 +130,7 @@ class DashgramSDK {
     return {
       eventId: generateUUID(),
       type,
-      initData: getTelegramInitData(),
+      initData: getTelegramUnsafeInitData() ?? {},
       properties: Object.keys(properties).length > 0 ? properties : undefined,
       telemetry: this.context!.getTelemetry(),
       source,

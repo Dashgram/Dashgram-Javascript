@@ -49,6 +49,57 @@ export function getTelegramInitData(): string {
 }
 
 /**
+ * Get Telegram unsafeInitData object (parsed from initData string)
+ * First tries WebApp.initDataUnsafe, then parses from initData string
+ */
+export function getTelegramUnsafeInitData(): Record<string, unknown> | undefined {
+  const webApp = getTelegramWebApp()
+
+  // Try WebApp.initDataUnsafe first (if available)
+  if (webApp?.initDataUnsafe) {
+    return webApp.initDataUnsafe as Record<string, unknown>
+  }
+
+  // Fallback: parse from initData string
+  const initDataString = getTelegramInitData()
+  if (!initDataString) {
+    return undefined
+  }
+
+  try {
+    // Parse URL-encoded query string
+    const params = new URLSearchParams(initDataString)
+    const result: Record<string, unknown> = {}
+
+    // Parse all parameters
+    for (const [key, value] of params.entries()) {
+      // Try to parse JSON values (like 'user')
+      if (key === "user" || key === "receiver" || key === "chat") {
+        try {
+          result[key] = JSON.parse(decodeURIComponent(value))
+        } catch {
+          result[key] = value
+        }
+      } else if (key === "auth_date" || key === "can_send_after") {
+        // Parse numeric values
+        const num = parseInt(value, 10)
+        if (!isNaN(num)) {
+          result[key] = num
+        } else {
+          result[key] = value
+        }
+      } else {
+        result[key] = value
+      }
+    }
+
+    return Object.keys(result).length > 0 ? result : undefined
+  } catch {
+    return undefined
+  }
+}
+
+/**
  * Get Telegram platform
  */
 export function getTelegramPlatform(): string {

@@ -1,4 +1,4 @@
-import type { DashgramError } from '../errors'
+import type { DashgramError } from "../errors"
 
 /**
  * Track level defines how many auto-events are collected
@@ -8,7 +8,7 @@ export type TrackLevel = 1 | 2 | 3
 /**
  * Event source type
  */
-export type EventSource = 'auto' | 'manual'
+export type EventSource = "auto" | "manual"
 
 /**
  * SDK Configuration
@@ -75,7 +75,7 @@ export interface WebAppEvent {
   type: string
 
   /** Raw Telegram initData string (passed as-is) */
-  initData: string
+  initData: Record<string, unknown>
 
   /** Custom event properties */
   properties?: unknown
@@ -126,7 +126,7 @@ export interface TelegramWebApp {
   platform?: string
   version?: string
   themeParams?: Record<string, string>
-  colorScheme?: 'light' | 'dark'
+  colorScheme?: "light" | "dark"
   isExpanded?: boolean
   viewportHeight?: number
   viewportStableHeight?: number
@@ -163,7 +163,7 @@ export interface TelegramWebApp {
   BiometricManager?: {
     isInited?: boolean
     isBiometricAvailable?: boolean
-    biometricType?: 'finger' | 'face' | 'unknown'
+    biometricType?: "finger" | "face" | "unknown"
     isAccessRequested?: boolean
     isAccessGranted?: boolean
     isBiometricTokenSaved?: boolean
