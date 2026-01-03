@@ -1,326 +1,199 @@
 # Dashgram JavaScript SDK
 
-Client-side analytics SDK for **Telegram Mini Apps**.
+Analytics SDK for **Telegram Mini Apps**. Automatically captures user interactions and sends events to the Dashgram backend.
 
-## What is this?
-
-Dashgram JavaScript SDK is a lightweight analytics library designed specifically for [Telegram Mini Apps](https://core.telegram.org/bots/webapps). It automatically captures user interactions, Telegram WebApp events, and allows you to track custom events—all with minimal setup.
-
-### Important
-
-- ✅ **This SDK is for Telegram Mini Apps** (web apps embedded in Telegram)
-- ❌ **This SDK is NOT for Telegram bots** — if you're building a bot, use the [Python SDK](https://github.com/dashgram/dashgram-python) or [Go SDK](https://github.com/dashgram/go-dashgram) instead
-- ⚠️ **Backend ingestion is not yet publicly available** — see [Current Limitations](#current-limitations)
-
----
+> ⚠️ **Important**: This SDK is designed exclusively for **Telegram Mini Apps** (WebApps).
+> It is **NOT** for Telegram bots. For bot analytics, use the [Python SDK](../sdk-python) or [Go SDK](../go-dashgram).
 
 ## Installation
 
 ```bash
-# npm
 npm install @dashgram/javascript
-
-# pnpm
+# or
 pnpm add @dashgram/javascript
-
-# yarn
+# or
 yarn add @dashgram/javascript
 ```
-
----
 
 ## Quick Start
 
 ```typescript
 import DashgramMini from "@dashgram/javascript"
 
-// Initialize the SDK
+// Initialize SDK
 DashgramMini.init({
   projectId: "your-project-id",
-  apiKey: "your-api-key",
-  trackLevel: 2, // 1 = minimal, 2 = interactions, 3 = deep analytics
-  debug: true // Enable console logging (disable in production)
+  trackLevel: 2, // 1 = core, 2 = interactions, 3 = deep analytics
+  debug: true // Enable in development
 })
 
-// Track a custom event
+// Track custom events
 DashgramMini.track("purchase_completed", {
-  item_id: "premium_subscription",
+  product_id: "premium-plan",
   price: 9.99,
   currency: "USD"
 })
-
-// Identify the user (optional, Telegram user ID is captured automatically)
-DashgramMini.identify("user-123", {
-  plan: "premium"
-})
 ```
 
-Once initialized, the SDK automatically captures events based on the configured `trackLevel`.
-
----
-
-## Track Levels
-
-The SDK supports three tracking levels. Higher levels include all events from lower levels.
-
-### Level 1 — Core (Default)
-
-Minimal tracking for basic analytics:
-
-| Event           | Description               |
-| --------------- | ------------------------- |
-| `app_open`      | Mini App opened           |
-| `app_close`     | Mini App closed or hidden |
-| `session_start` | New session started       |
-| `session_end`   | Session ended             |
-
-Also captures: device info, platform, Telegram user ID (if available).
-
-### Level 2 — Interaction
-
-Adds user interaction tracking:
-
-| Event                 | Description                  |
-| --------------------- | ---------------------------- |
-| `screen_view`         | Page/route navigation        |
-| `button_click`        | Button clicks                |
-| `link_click`          | Link clicks                  |
-| `form_submit`         | Form submissions             |
-| `input_focus`         | Input field focus            |
-| `js_error`            | JavaScript errors            |
-| `unhandled_rejection` | Unhandled Promise rejections |
-
-### Level 3 — Deep Analytics
-
-Adds performance metrics and **all Telegram WebApp events**:
-
-**Performance:**
-
-- `scroll_depth` — Scroll milestones (25%, 50%, 75%, 100%)
-- `element_visible` — Element visibility tracking
-- `rage_click` — Frustration detection (5+ clicks in 2 seconds)
-- `long_task` — JavaScript tasks >50ms
-- `web_vital_lcp`, `web_vital_fid`, `web_vital_cls` — Core Web Vitals
-
-**Telegram WebApp Events:**
-
-All events from the official [Telegram Web Events API](https://core.telegram.org/api/web-events) are captured automatically, including:
-
-- UI: `themeChanged`, `viewportChanged`, `safeAreaChanged`, `fullscreenChanged`
-- Buttons: `mainButtonClicked`, `backButtonClicked`, `settingsButtonClicked`, `secondaryButtonClicked`
-- Payments: `invoiceClosed`
-- Popups: `popupClosed`, `scanQrPopupClosed`
-- Permissions: `writeAccessRequested`, `contactRequested`
-- Sensors: `accelerometerChanged`, `gyroscopeChanged`, `deviceOrientationChanged`
-- Biometrics: `biometricManagerUpdated`, `biometricAuthRequested`
-- And 30+ more events
-
-Event names and payloads follow the official Telegram specification.
-
----
-
-## API Reference
-
-### `DashgramMini.init(config)`
-
-Initialize the SDK. Must be called before any other method.
+## Configuration
 
 ```typescript
 DashgramMini.init({
-  projectId: string,       // Required: Your project ID
-  apiKey: string,          // Required: Your API key
-  trackLevel?: 1 | 2 | 3,  // Default: 1
-  debug?: boolean,         // Default: false
-  disabled?: boolean,      // Default: false (set true to disable tracking)
-  batchSize?: number,      // Default: 10
-  flushInterval?: number,  // Default: 5000 (ms)
-  apiUrl?: string,         // Custom API endpoint (optional)
-  onError?: (error) => void // Error handler callback (optional)
+  projectId: "your-project-id", // Required
+  trackLevel: 2, // Optional: 1, 2, or 3 (default: 1)
+  debug: false, // Optional: enable console logs
+  disabled: false, // Optional: disable tracking entirely
+  batchSize: 10, // Optional: events per batch
+  flushInterval: 5000 // Optional: flush interval in ms
 })
 ```
 
-### `DashgramMini.track(event, properties?)`
+## Track Levels
+
+### Level 1 — Core (Default)
+
+Minimal tracking:
+
+| Event       | Description                       |
+| ----------- | --------------------------------- |
+| `app_open`  | Mini App opened or became visible |
+| `app_close` | Mini App closed or hidden         |
+
+### Level 2 — Interactions
+
+Adds user interaction tracking:
+
+| Event                 | Description                      |
+| --------------------- | -------------------------------- |
+| `screen_view`         | Page/route navigation            |
+| `button_click`        | Button clicks                    |
+| `link_click`          | Link clicks (external detection) |
+| `form_submit`         | Form submissions                 |
+| `input_focus`         | Input field focus                |
+| `input_change`        | Input field value changed        |
+| `copy`                | Text copied to clipboard         |
+| `cut`                 | Text cut to clipboard            |
+| `paste`               | Text pasted from clipboard       |
+| `text_select`         | Text selection                   |
+| `js_error`            | JavaScript errors                |
+| `unhandled_rejection` | Unhandled Promise rejections     |
+
+### Level 3 — Deep Analytics
+
+Adds performance and Telegram-specific tracking:
+
+| Event                            | Description                    |
+| -------------------------------- | ------------------------------ |
+| `scroll_depth`                   | Scroll milestone reached       |
+| `element_visible`                | Tracked element became visible |
+| `rage_click`                     | Rapid repeated clicks          |
+| `long_task`                      | JS task >50ms                  |
+| `web_vital_lcp`                  | Largest Contentful Paint       |
+| `web_vital_fid`                  | First Input Delay              |
+| `web_vital_cls`                  | Cumulative Layout Shift        |
+| `network_status`                 | Online/offline status          |
+| `orientation_change`             | Device orientation change      |
+| `media_play/pause/ended`         | Video/audio events             |
+| `telegram_theme_changed`         | Telegram theme change          |
+| `telegram_viewport_changed`      | Viewport size change           |
+| `telegram_main_button_clicked`   | Main button pressed            |
+| `telegram_back_button_clicked`   | Back button pressed            |
+| `telegram_invoice_closed`        | Invoice closed                 |
+| ...and all other Telegram events |                                |
+
+## API
+
+### `DashgramMini.init(config)`
+
+Initialize the SDK. Call once when your app loads.
+
+### `DashgramMini.track(event, properties)`
 
 Track a custom event.
 
 ```typescript
-DashgramMini.track("button_clicked", {
-  button_name: "subscribe",
-  screen: "pricing"
-})
-```
-
-### `DashgramMini.identify(userId, traits?)`
-
-Associate events with a user identity.
-
-```typescript
-DashgramMini.identify("user-456", {
-  email: "user@example.com",
-  subscription: "pro"
+DashgramMini.track("checkout_started", {
+  cart_value: 49.99,
+  item_count: 3
 })
 ```
 
 ### `DashgramMini.setTrackLevel(level)`
 
-Change the tracking level at runtime.
+Change the track level at runtime.
 
 ```typescript
-DashgramMini.setTrackLevel(3)
+DashgramMini.setTrackLevel(3) // Enable deep analytics
 ```
 
 ### `DashgramMini.flush()`
 
-Force-send all queued events immediately.
+Force send all pending events.
 
 ```typescript
 await DashgramMini.flush()
 ```
 
-### `DashgramMini.reset()`
-
-Clear the current session and user identity.
-
-```typescript
-DashgramMini.reset()
-```
-
 ### `DashgramMini.shutdown()`
 
-Stop tracking and flush remaining events.
+Stop tracking and clean up.
 
 ```typescript
 DashgramMini.shutdown()
 ```
 
----
+## User Identification
 
-## Element Visibility Tracking
+User identification is handled **automatically** via Telegram's `initData`. The SDK sends the raw `initData` string with every event, allowing the backend to validate and extract user information securely.
 
-At Level 3, you can track when specific elements become visible:
+You do **not** need to call any identify method.
 
-```html
-<div data-track-visible="pricing-section">
-  <!-- Your content -->
-</div>
-```
+## How It Works
 
-An `element_visible` event fires when the element is ≥50% visible in the viewport.
-
----
+1. SDK captures events based on `trackLevel`
+2. Events are batched for efficiency
+3. Each event includes:
+   - `eventId`: UUID for deduplication
+   - `type`: Event name
+   - `initData`: Raw Telegram initData (for backend validation)
+   - `properties`: Custom event data
+   - `telemetry`: Platform, user agent, timezone, theme
+   - `timestamp`: Unix milliseconds
+4. Events are sent to `POST /v1/{projectId}/webapp/track`
 
 ## TypeScript Support
 
-The SDK is written in TypeScript and ships with full type definitions.
+Full TypeScript support with exported types:
 
 ```typescript
-import DashgramMini, {
-  type DashgramConfig,
-  type DashgramEvent,
-  type EventProperties,
-  type UserTraits,
-  type TrackLevel,
-  DashgramError,
-  InvalidCredentialsError,
-  DashgramAPIError,
-  NetworkError,
-  DashgramConfigurationError
-} from "@dashgram/javascript"
+import type { DashgramConfig, WebAppEvent, EventProperties, TrackLevel } from "@dashgram/javascript"
 ```
-
----
 
 ## Error Handling
 
-The SDK provides typed error classes:
-
 ```typescript
+import { DashgramMini, DashgramAPIError, NetworkError } from "@dashgram/javascript"
+
 DashgramMini.init({
-  projectId: "xxx",
-  apiKey: "yyy",
+  projectId: "your-project-id",
   onError: error => {
-    if (error instanceof InvalidCredentialsError) {
-      console.error("Invalid credentials")
-    } else if (error instanceof NetworkError) {
-      console.error("Network error:", error.originalError)
-    } else if (error instanceof DashgramConfigurationError) {
-      console.error("Config error:", error.message)
+    if (error instanceof NetworkError) {
+      console.log("Network issue:", error.message)
+    } else if (error instanceof DashgramAPIError) {
+      console.log("API error:", error.statusCode, error.details)
     }
   }
 })
 ```
 
----
+## Browser Support
 
-## Event Payload Format
+- Chrome 64+
+- Firefox 67+
+- Safari 12+
+- Edge 79+
 
-Every event sent by the SDK follows this structure:
-
-```typescript
-{
-  event: string,              // Event name
-  properties: object,         // Custom properties
-  timestamp: string,          // ISO 8601 timestamp
-  source: "auto" | "manual",  // How the event was triggered
-  level: 1 | 2 | 3,           // Track level
-  session_id: string,         // Session UUID
-  user_id: string | null,     // Telegram user ID or custom ID
-  context: {
-    platform: string,         // e.g., "android", "ios", "web"
-    app_version: string,
-    language: string,
-    screen_width: number,
-    screen_height: number,
-    viewport_width: number,
-    viewport_height: number,
-    user_agent: string,
-    timezone: string,
-    telegram_version: string,
-    theme: string             // "light" or "dark"
-  }
-}
-```
-
----
-
-## Current Limitations
-
-### Backend Ingestion
-
-The backend event ingestion API is **not yet publicly available**. The SDK collects and sends events, but:
-
-- There is no public dashboard yet
-- Event processing and storage are under development
-- The ingestion API shape may change
-
-If you're evaluating Dashgram for production use, please contact the team for early access.
-
-### What This SDK Does NOT Do
-
-- ❌ Does not work server-side (Node.js)
-- ❌ Does not work with Telegram bots (use Python/Go SDKs)
-- ❌ Does not provide real-time analytics (yet)
-- ❌ Does not handle user consent/GDPR (implement separately if required)
-
----
-
-## Telegram Web Events Reference
-
-This SDK implements event tracking according to the official Telegram specification:
-
-📖 **[Telegram Web Events API](https://core.telegram.org/api/web-events)**
-
-All event names and payload structures match the official documentation.
-
----
-
-## Stability
-
-The client-side API is **stable**. Method signatures and event formats will not change in breaking ways without a major version bump.
-
-The backend integration is still in development. See [BACKEND_INTEGRATION.md](./BACKEND_INTEGRATION.md) for details.
-
----
+Works in all environments that support Telegram Mini Apps.
 
 ## License
 

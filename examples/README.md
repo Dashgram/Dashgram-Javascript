@@ -1,6 +1,6 @@
 # Dashgram JavaScript SDK Examples
 
-This directory contains example implementations showing how to use the Dashgram JavaScript SDK in various environments.
+This directory contains example implementations showing how to use the Dashgram JavaScript SDK in **Telegram Mini Apps**.
 
 ## Installation
 
@@ -34,16 +34,15 @@ Next.js App Router example with client-side SDK initialization.
 
 ### Telegram Mini App (`telegram-miniapp-example.ts`)
 
-Comprehensive example showing typical analytics tracking patterns in a Telegram Mini App, including Telegram WebApp API integration.
+Comprehensive example showing typical analytics tracking patterns in a Telegram Mini App.
 
 ## Configuration
 
-All examples use placeholder values for `projectId` and `apiKey`. Replace these with your actual credentials from the Dashgram dashboard:
+All examples use placeholder values for `projectId`. Replace with your actual project ID from the Dashgram dashboard:
 
 ```typescript
 DashgramMini.init({
   projectId: "your-project-id", // Replace with your project ID
-  apiKey: "your-api-key", // Replace with your API key
   trackLevel: 2, // 1, 2, or 3
   debug: true // Set to false in production
 })
@@ -51,20 +50,11 @@ DashgramMini.init({
 
 ## Track Levels
 
-- **Level 1 (Core)**: Minimal tracking - app open/close, sessions, device info
+- **Level 1 (Core)**: Minimal tracking — app open/close, device info
 - **Level 2 (Interaction)**: Level 1 + clicks, form submissions, errors, screen views
-- **Level 3 (Deep)**: Level 1 + 2 + scroll depth, element visibility, web vitals, Telegram events
+- **Level 3 (Deep)**: Level 1 + 2 + scroll depth, element visibility, web vitals, all Telegram events
 
 ## Common Patterns
-
-### User Identification
-
-```typescript
-DashgramMini.identify("user-123", {
-  email: "user@example.com",
-  plan: "premium"
-})
-```
 
 ### Custom Event Tracking
 
@@ -84,13 +74,19 @@ window.addEventListener("beforeunload", async () => {
 })
 ```
 
+## User Identification
+
+User identification is handled **automatically** via Telegram's `initData`. The SDK sends the raw initData with every event, and the backend validates and extracts user information.
+
+You do **not** need to call any identify method.
+
 ## Environment Variables
 
 For production apps, use environment variables:
 
-- **React**: `REACT_APP_DASHGRAM_PROJECT_ID`, `REACT_APP_DASHGRAM_API_KEY`
-- **Next.js**: `NEXT_PUBLIC_DASHGRAM_PROJECT_ID`, `NEXT_PUBLIC_DASHGRAM_API_KEY`
-- **Vite**: `VITE_DASHGRAM_PROJECT_ID`, `VITE_DASHGRAM_API_KEY`
+- **React**: `REACT_APP_DASHGRAM_PROJECT_ID`
+- **Next.js**: `NEXT_PUBLIC_DASHGRAM_PROJECT_ID`
+- **Vite**: `VITE_DASHGRAM_PROJECT_ID`
 
 ## More Information
 

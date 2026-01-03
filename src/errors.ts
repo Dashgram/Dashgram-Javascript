@@ -12,24 +12,9 @@ export class DashgramError extends Error {
   constructor(message: string) {
     super(message)
     this.name = "DashgramError"
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
     const ErrorWithCapture = Error as unknown as ErrorConstructorWithCapture
     if (typeof ErrorWithCapture.captureStackTrace === "function") {
       ErrorWithCapture.captureStackTrace(this, DashgramError)
-    }
-  }
-}
-
-/**
- * Error thrown when API credentials are invalid
- */
-export class InvalidCredentialsError extends DashgramError {
-  constructor(message = "Invalid projectId or apiKey") {
-    super(message)
-    this.name = "InvalidCredentialsError"
-    const ErrorWithCapture = Error as unknown as ErrorConstructorWithCapture
-    if (typeof ErrorWithCapture.captureStackTrace === "function") {
-      ErrorWithCapture.captureStackTrace(this, InvalidCredentialsError)
     }
   }
 }

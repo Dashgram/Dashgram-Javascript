@@ -1,7 +1,8 @@
-import type { DashgramEvent } from "../types"
+import type { WebAppEvent, WebAppTrackRequest } from "../types"
 import type { Config } from "../core/config"
 import { safeStringify } from "../utils/helpers"
-import { InvalidCredentialsError, DashgramAPIError, NetworkError } from "../errors"
+import { DashgramAPIError, NetworkError } from "../errors"
+import { getCurrentOrigin } from "../utils/device"
 
 /**
  * Transport layer - sends events to backend
@@ -38,11 +39,19 @@ export class Transport {
   }
 
   /**
-   * Send events to backend
-   * Errors are caught and handled by default (backward compatible)
-   * Users can opt-in to error handling via onError callback
+   * Build request payload
    */
-  async send(events: DashgramEvent[]): Promise<void> {
+  private buildPayload(events: WebAppEvent[]): WebAppTrackRequest {
+    return {
+      origin: getCurrentOrigin() || undefined,
+      updates: events
+    }
+  }
+
+  /**
+   * Send events to backend
+   */
+  async send(events: WebAppEvent[]): Promise<void> {
     if (events.length === 0) {
       return
     }
@@ -63,26 +72,17 @@ export class Transport {
     try {
       await request
     } catch (error) {
-      // Default behavior: log error (backward compatible)
       this.logError("Failed to send events:", error)
 
-      // Call user's error handler if provided
       const onError = this.config.getOnError()
       if (onError) {
         try {
-          // error is already a DashgramError from sendRequest
-          if (
-            error instanceof InvalidCredentialsError ||
-            error instanceof DashgramAPIError ||
-            error instanceof NetworkError
-          ) {
+          if (error instanceof DashgramAPIError || error instanceof NetworkError) {
             onError(error)
           } else if (error instanceof Error) {
-            // Fallback: wrap unknown errors
             onError(new NetworkError(error))
           }
         } catch (handlerError) {
-          // Don't let user's error handler break SDK
           this.logError("Error in onError callback:", handlerError)
         }
       }
@@ -93,30 +93,20 @@ export class Transport {
 
   /**
    * Send request to backend
-   * @throws {InvalidCredentialsError} If credentials are invalid (403)
-   * @throws {DashgramAPIError} If API returns an error
-   * @throws {NetworkError} If network request fails
    */
-  private async sendRequest(events: DashgramEvent[]): Promise<void> {
-    const url = this.config.get("apiUrl")
-    const apiKey = this.config.get("apiKey")
-    const projectId = this.config.get("projectId")
+  private async sendRequest(events: WebAppEvent[]): Promise<void> {
+    const url = this.config.getTrackUrl()
+    const payload = this.buildPayload(events)
 
     try {
       const response = await fetch(url, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": apiKey,
-          "X-Project-ID": projectId
+          "Content-Type": "application/json"
         },
-        body: safeStringify({ events }),
+        body: safeStringify(payload),
         keepalive: true
       })
-
-      if (response.status === 403) {
-        throw new InvalidCredentialsError()
-      }
 
       if (!response.ok) {
         let details = response.statusText
@@ -124,7 +114,7 @@ export class Transport {
           const errorData = await response.json()
           details = errorData.details || errorData.message || details
         } catch {
-          // Ignore JSON parse errors, use statusText
+          // Ignore JSON parse errors
         }
 
         throw new DashgramAPIError(response.status, details)
@@ -132,17 +122,14 @@ export class Transport {
 
       this.log(`Sent ${events.length} events successfully`)
     } catch (error) {
-      // Re-throw typed errors
-      if (error instanceof InvalidCredentialsError || error instanceof DashgramAPIError) {
+      if (error instanceof DashgramAPIError) {
         throw error
       }
 
-      // Wrap network/unknown errors
       if (error instanceof Error) {
         throw new NetworkError(error)
       }
 
-      // Fallback for non-Error exceptions
       throw new NetworkError(new Error(String(error)))
     }
   }
@@ -150,7 +137,7 @@ export class Transport {
   /**
    * Send events using sendBeacon (for page unload)
    */
-  sendBeacon(events: DashgramEvent[]): boolean {
+  sendBeacon(events: WebAppEvent[]): boolean {
     if (events.length === 0) {
       return true
     }
@@ -163,18 +150,10 @@ export class Transport {
       return false
     }
 
-    const url = this.config.get("apiUrl")
-    const apiKey = this.config.get("apiKey")
-    const projectId = this.config.get("projectId")
+    const url = this.config.getTrackUrl()
+    const payload = this.buildPayload(events)
 
-    // sendBeacon doesn't support custom headers, so include auth in payload
-    const payload = safeStringify({
-      events,
-      apiKey,
-      projectId
-    })
-
-    const blob = new Blob([payload], { type: "application/json" })
+    const blob = new Blob([safeStringify(payload)], { type: "application/json" })
     const sent = navigator.sendBeacon(url, blob)
 
     this.log(`sendBeacon ${sent ? "succeeded" : "failed"} for ${events.length} events`)
@@ -192,7 +171,7 @@ export class Transport {
   /**
    * Log debug message
    */
-  private log(...args: any[]): void {
+  private log(...args: unknown[]): void {
     if (this.config.isDebug()) {
       console.log("[Dashgram Transport]", ...args)
     }
@@ -201,7 +180,7 @@ export class Transport {
   /**
    * Log error message
    */
-  private logError(...args: any[]): void {
+  private logError(...args: unknown[]): void {
     if (this.config.isDebug()) {
       console.error("[Dashgram Transport]", ...args)
     }

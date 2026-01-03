@@ -1,14 +1,13 @@
-import type { DashgramConfig, DashgramEvent, EventProperties, UserTraits, TrackLevel } from "./types"
+import type { DashgramConfig, WebAppEvent, EventProperties, TrackLevel } from "./types"
 import { Config } from "./core/config"
 import { Context } from "./core/context"
-import { Session } from "./core/session"
 import { Transport } from "./transport/transport"
 import { BatchProcessor } from "./transport/batch-processor"
 import { CoreTracker } from "./trackers/core-tracker"
 import { InteractionTracker } from "./trackers/interaction-tracker"
 import { DeepTracker } from "./trackers/deep-tracker"
-import { getTimestamp, isBrowser } from "./utils/helpers"
-import { getTelegramUserId } from "./utils/telegram"
+import { generateUUID, isBrowser } from "./utils/helpers"
+import { getTelegramInitData } from "./utils/telegram"
 
 /**
  * Main Dashgram SDK class
@@ -16,7 +15,6 @@ import { getTelegramUserId } from "./utils/telegram"
 class DashgramSDK {
   private config: Config | null = null
   private context: Context | null = null
-  private session: Session | null = null
   private transport: Transport | null = null
   private batchProcessor: BatchProcessor | null = null
   private trackers: Array<CoreTracker | InteractionTracker | DeepTracker> = []
@@ -44,12 +42,12 @@ class DashgramSDK {
       // Initialize core components
       this.config = new Config(userConfig)
 
-      // Set debug flag for global access (used by telegram.ts)
+      // Set debug flag for global access
       if (typeof window !== "undefined") {
-        ;(window as any).__DASHGRAM_DEBUG__ = this.config.isDebug()
+        ;(window as typeof window & { __DASHGRAM_DEBUG__?: boolean }).__DASHGRAM_DEBUG__ = this.config.isDebug()
       }
+
       this.context = new Context()
-      this.session = new Session()
       this.transport = new Transport(this.config)
       this.batchProcessor = new BatchProcessor(this.config, this.transport)
 
@@ -122,41 +120,21 @@ class DashgramSDK {
   }
 
   /**
-   * Build full event object
+   * Build full event object matching backend contract
    */
-  private buildEvent(event: string, properties: EventProperties, source: "auto" | "manual"): DashgramEvent {
+  private buildEvent(type: string, properties: EventProperties, source: "auto" | "manual"): WebAppEvent {
     this.ensureInitialized()
-
-    // Renew session if expired
-    this.session!.renewIfExpired()
-    this.session!.updateLastActivity()
 
     return {
-      event,
-      properties,
-      timestamp: getTimestamp(),
+      eventId: generateUUID(),
+      type,
+      initData: getTelegramInitData(),
+      properties: Object.keys(properties).length > 0 ? properties : undefined,
+      telemetry: this.context!.getTelemetry(),
       source,
       level: this.config!.getTrackLevel(),
-      session_id: this.session!.getSessionId(),
-      user_id: this.context!.getUserId() || getTelegramUserId(),
-      context: this.context!.getContext()
+      timestamp: Date.now()
     }
-  }
-
-  /**
-   * Identify user
-   */
-  identify(userId: string, traits: UserTraits = {}): void {
-    this.ensureInitialized()
-
-    this.context!.setUserId(userId)
-
-    this.track("identify", {
-      user_id: userId,
-      ...traits
-    })
-
-    this.log("Identified user", { userId, traits })
   }
 
   /**
@@ -186,18 +164,6 @@ class DashgramSDK {
     await this.batchProcessor!.flushAsync()
 
     this.log("Flushed all events")
-  }
-
-  /**
-   * Reset SDK (clear session, user)
-   */
-  reset(): void {
-    this.ensureInitialized()
-
-    this.session!.reset()
-    this.context!.clearUserId()
-
-    this.log("Reset session and user")
   }
 
   /**
@@ -233,7 +199,7 @@ class DashgramSDK {
   /**
    * Log debug message
    */
-  private log(...args: any[]): void {
+  private log(...args: unknown[]): void {
     if (this.config?.isDebug()) {
       console.log("[Dashgram SDK]", ...args)
     }
@@ -242,21 +208,6 @@ class DashgramSDK {
 
 // Create singleton instance
 const DashgramMini = new DashgramSDK()
-
-// Export types
-export type { DashgramConfig, DashgramEvent, EventProperties, UserTraits, TrackLevel }
-
-// Export error classes
-export {
-  DashgramError,
-  InvalidCredentialsError,
-  DashgramAPIError,
-  NetworkError,
-  DashgramConfigurationError
-} from "./errors"
-
-// Export singleton
-export { DashgramMini }
 
 // Default export
 export default DashgramMini

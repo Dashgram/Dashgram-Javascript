@@ -4,9 +4,9 @@ import { DashgramConfigurationError } from "../errors"
 /**
  * Default configuration
  */
-const DEFAULT_CONFIG: Required<Omit<DashgramConfig, "projectId" | "apiKey" | "onError">> = {
+const DEFAULT_CONFIG: Required<Omit<DashgramConfig, "projectId" | "onError">> = {
   trackLevel: 1,
-  apiUrl: "https://api.dashgram.com/v1/events",
+  apiUrl: "https://api.dashgram.io/v1",
   batchSize: 10,
   flushInterval: 5000, // 5 seconds
   debug: false,
@@ -36,10 +36,6 @@ export class Config {
       throw new DashgramConfigurationError("projectId is required")
     }
 
-    if (!this.config.apiKey) {
-      throw new DashgramConfigurationError("apiKey is required")
-    }
-
     if (![1, 2, 3].includes(this.config.trackLevel)) {
       throw new DashgramConfigurationError("trackLevel must be 1, 2, or 3")
     }
@@ -57,6 +53,14 @@ export class Config {
    */
   getOnError(): DashgramConfig["onError"] {
     return this.config.onError
+  }
+
+  /**
+   * Get the full API URL for tracking
+   */
+  getTrackUrl(): string {
+    const baseUrl = this.config.apiUrl.replace(/\/$/, "")
+    return `${baseUrl}/${this.config.projectId}/webapp/track`
   }
 
   /**

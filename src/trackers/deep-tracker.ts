@@ -2,18 +2,19 @@ import { BaseTracker } from "./base-tracker"
 import type { Config } from "../core/config"
 import type { TrackCallback } from "./base-tracker"
 import { throttle } from "../utils/helpers"
-import { getScrollDepth } from "../utils/device"
 import { subscribeToTelegramEvent } from "../utils/telegram"
 
 /**
  * Deep tracker (Level 3)
- * Tracks: scroll_depth, element_visible, rage_click, long_task, web_vitals, Telegram events
+ * Tracks: scroll_depth, element_visible, rage_click, long_task, web_vitals,
+ *         network_status, orientation_change, media events, Telegram events
  */
 export class DeepTracker extends BaseTracker {
   private unsubscribers: (() => void)[] = []
-  private observers: Array<IntersectionObserver | PerformanceObserver> = []
+  private observers: Array<IntersectionObserver | PerformanceObserver | MutationObserver> = []
   private clickTracker = new Map<Element, { count: number; timer: any }>()
   private maxScrollDepth = 0
+  private trackedMedia = new WeakSet<HTMLMediaElement>()
 
   constructor(config: Config, trackCallback: TrackCallback) {
     super(config, trackCallback, 3)
@@ -29,6 +30,9 @@ export class DeepTracker extends BaseTracker {
     this.setupRageClickTracking()
     this.setupLongTaskTracking()
     this.setupWebVitals()
+    this.setupNetworkTracking()
+    this.setupOrientationTracking()
+    this.setupMediaTracking()
     this.setupTelegramTracking()
   }
 
@@ -43,11 +47,29 @@ export class DeepTracker extends BaseTracker {
   }
 
   /**
+   * Calculate scroll depth percentage
+   */
+  private getScrollDepth(): number {
+    const windowHeight = window.innerHeight
+    const documentHeight = document.documentElement.scrollHeight
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop
+
+    if (documentHeight <= windowHeight) {
+      return 100
+    }
+
+    const maxScroll = documentHeight - windowHeight
+    const scrollPercentage = (scrollTop / maxScroll) * 100
+
+    return Math.min(Math.round(scrollPercentage), 100)
+  }
+
+  /**
    * Setup scroll depth tracking
    */
   private setupScrollTracking(): void {
     const handleScroll = throttle(() => {
-      const depth = getScrollDepth()
+      const depth = this.getScrollDepth()
 
       // Track milestones: 25%, 50%, 75%, 100%
       if (depth > this.maxScrollDepth) {
@@ -290,6 +312,165 @@ export class DeepTracker extends BaseTracker {
     } catch (error) {
       this.log("CLS tracking not supported")
     }
+  }
+
+  /**
+   * Setup network status tracking (online/offline)
+   */
+  private setupNetworkTracking(): void {
+    const handleOnline = () => {
+      this.track("network_status", {
+        status: "online",
+        effective_type: (navigator as any).connection?.effectiveType,
+        downlink: (navigator as any).connection?.downlink,
+        rtt: (navigator as any).connection?.rtt
+      })
+    }
+
+    const handleOffline = () => {
+      this.track("network_status", {
+        status: "offline"
+      })
+    }
+
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
+
+    this.unsubscribers.push(() => {
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
+    })
+
+    // Track network changes if supported
+    const connection = (navigator as any).connection
+    if (connection) {
+      const handleConnectionChange = () => {
+        this.track("network_change", {
+          effective_type: connection.effectiveType,
+          downlink: connection.downlink,
+          rtt: connection.rtt,
+          save_data: connection.saveData
+        })
+      }
+
+      connection.addEventListener("change", handleConnectionChange)
+
+      this.unsubscribers.push(() => {
+        connection.removeEventListener("change", handleConnectionChange)
+      })
+    }
+  }
+
+  /**
+   * Setup device orientation change tracking
+   */
+  private setupOrientationTracking(): void {
+    const handleOrientationChange = () => {
+      const orientation =
+        screen.orientation?.type || (window.innerWidth > window.innerHeight ? "landscape" : "portrait")
+
+      this.track("orientation_change", {
+        orientation: orientation,
+        angle: screen.orientation?.angle,
+        width: window.innerWidth,
+        height: window.innerHeight
+      })
+    }
+
+    // Use screen.orientation API if available, fallback to resize
+    if (screen.orientation) {
+      screen.orientation.addEventListener("change", handleOrientationChange)
+      this.unsubscribers.push(() => {
+        screen.orientation.removeEventListener("change", handleOrientationChange)
+      })
+    } else {
+      // Fallback for older browsers
+      window.addEventListener("orientationchange", handleOrientationChange)
+      this.unsubscribers.push(() => {
+        window.removeEventListener("orientationchange", handleOrientationChange)
+      })
+    }
+  }
+
+  /**
+   * Setup media (video/audio) event tracking
+   */
+  private setupMediaTracking(): void {
+    const trackMediaEvent = (event: Event) => {
+      const media = event.target as HTMLMediaElement
+      if (!media || this.trackedMedia.has(media)) return
+
+      const mediaType = media.tagName.toLowerCase() // "video" or "audio"
+      const eventType = event.type
+
+      const baseProps = {
+        media_type: mediaType,
+        src: media.currentSrc || media.src,
+        duration: isFinite(media.duration) ? Math.round(media.duration) : undefined,
+        current_time: Math.round(media.currentTime),
+        muted: media.muted,
+        volume: Math.round(media.volume * 100)
+      }
+
+      if (eventType === "play") {
+        this.track("media_play", baseProps)
+      } else if (eventType === "pause") {
+        this.track("media_pause", {
+          ...baseProps,
+          percent_played: media.duration ? Math.round((media.currentTime / media.duration) * 100) : 0
+        })
+      } else if (eventType === "ended") {
+        this.track("media_ended", {
+          ...baseProps,
+          completed: true
+        })
+      } else if (eventType === "error") {
+        this.track("media_error", {
+          media_type: mediaType,
+          src: media.currentSrc || media.src,
+          error: media.error?.message || "unknown"
+        })
+      }
+    }
+
+    // Track events on existing media elements
+    const setupMediaElement = (media: HTMLMediaElement) => {
+      if (this.trackedMedia.has(media)) return
+      this.trackedMedia.add(media)
+
+      media.addEventListener("play", trackMediaEvent)
+      media.addEventListener("pause", trackMediaEvent)
+      media.addEventListener("ended", trackMediaEvent)
+      media.addEventListener("error", trackMediaEvent)
+    }
+
+    // Setup existing media elements
+    document.querySelectorAll("video, audio").forEach(media => {
+      setupMediaElement(media as HTMLMediaElement)
+    })
+
+    // Watch for dynamically added media elements
+    const observer = new MutationObserver(mutations => {
+      mutations.forEach(mutation => {
+        mutation.addedNodes.forEach(node => {
+          if (node instanceof HTMLMediaElement) {
+            setupMediaElement(node)
+          }
+          if (node instanceof Element) {
+            node.querySelectorAll("video, audio").forEach(media => {
+              setupMediaElement(media as HTMLMediaElement)
+            })
+          }
+        })
+      })
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+
+    this.observers.push(observer)
   }
 
   /**
@@ -823,16 +1004,12 @@ export class DeepTracker extends BaseTracker {
       webApp.shareToStory = patchedShareToStory
     }
 
-    // Track close calls (session end)
+    // Track close calls
     if (webApp.close && typeof webApp.close === "function") {
       const originalClose = webApp.close.bind(webApp)
       const patchedClose = (options?: any) => {
         trackEvent("webapp_close", {
           return_back: options?.return_back
-        })
-        // Also track as session_end
-        this.track("session_end", {
-          reason: "webapp_close"
         })
         return originalClose(options)
       }

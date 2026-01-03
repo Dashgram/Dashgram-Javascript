@@ -1,24 +1,24 @@
-import type { TrackLevel, EventProperties } from '../types';
-import type { Config } from '../core/config';
+import type { TrackLevel, EventProperties } from "../types"
+import type { Config } from "../core/config"
 
 /**
  * Callback for tracking events
  */
-export type TrackCallback = (event: string, properties: EventProperties) => void;
+export type TrackCallback = (event: string, properties: EventProperties) => void
 
 /**
  * Base tracker class
  */
 export abstract class BaseTracker {
-  protected config: Config;
-  protected trackCallback: TrackCallback;
-  protected isActive: boolean = false;
-  protected level: TrackLevel;
+  protected config: Config
+  protected trackCallback: TrackCallback
+  protected isActive: boolean = false
+  protected level: TrackLevel
 
   constructor(config: Config, trackCallback: TrackCallback, level: TrackLevel) {
-    this.config = config;
-    this.trackCallback = trackCallback;
-    this.level = level;
+    this.config = config
+    this.trackCallback = trackCallback
+    this.level = level
   }
 
   /**
@@ -26,16 +26,16 @@ export abstract class BaseTracker {
    */
   start(): void {
     if (this.isActive) {
-      return;
+      return
     }
 
-    const currentLevel = this.config.getTrackLevel();
+    const currentLevel = this.config.getTrackLevel()
 
     // Only start if current track level meets required level
     if (currentLevel >= this.level) {
-      this.isActive = true;
-      this.setup();
-      this.log(`Started (level ${this.level})`);
+      this.isActive = true
+      this.setup()
+      this.log(`Started (level ${this.level})`)
     }
   }
 
@@ -44,12 +44,12 @@ export abstract class BaseTracker {
    */
   stop(): void {
     if (!this.isActive) {
-      return;
+      return
     }
 
-    this.isActive = false;
-    this.teardown();
-    this.log(`Stopped`);
+    this.isActive = false
+    this.teardown()
+    this.log(`Stopped`)
   }
 
   /**
@@ -57,36 +57,28 @@ export abstract class BaseTracker {
    */
   protected track(event: string, properties: EventProperties = {}): void {
     if (!this.isActive) {
-      return;
+      return
     }
 
-    this.trackCallback(event, {
-      ...properties,
-      _tracker: this.constructor.name,
-    });
+    this.trackCallback(event, properties)
   }
 
   /**
    * Setup tracking (implement in subclass)
    */
-  protected abstract setup(): void;
+  protected abstract setup(): void
 
   /**
    * Teardown tracking (implement in subclass)
    */
-  protected abstract teardown(): void;
+  protected abstract teardown(): void
 
   /**
    * Log debug message
    */
-  protected log(...args: any[]): void {
+  protected log(...args: unknown[]): void {
     if (this.config.isDebug()) {
-      console.log(`[Dashgram ${this.constructor.name}]`, ...args);
+      console.log(`[Dashgram ${this.constructor.name}]`, ...args)
     }
   }
 }
-
-
-
-
-

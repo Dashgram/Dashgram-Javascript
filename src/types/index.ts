@@ -17,9 +17,6 @@ export interface DashgramConfig {
   /** Project ID from Dashgram dashboard */
   projectId: string
 
-  /** API Key for authentication */
-  apiKey: string
-
   /** Track level (1-3) */
   trackLevel?: TrackLevel
 
@@ -43,87 +40,79 @@ export interface DashgramConfig {
 }
 
 /**
- * Event context information
+ * Telemetry data sent with events (backend contract)
  */
-export interface EventContext {
-  /** Platform (from Telegram WebApp) */
-  platform: string
+export interface Telemetry {
+  /** IP address (optional, can be filled by backend) */
+  ip?: string
 
-  /** App version (from Telegram WebApp) */
-  app_version: string
+  /** Platform from Telegram WebApp */
+  platform?: string
 
-  /** Language */
-  language: string
+  /** Browser user agent */
+  user_agent?: string
 
-  /** Screen width */
-  screen_width: number
+  /** IANA timezone (e.g. "Europe/Moscow") */
+  timezone?: string
 
-  /** Screen height */
-  screen_height: number
-
-  /** Viewport width */
-  viewport_width: number
-
-  /** Viewport height */
-  viewport_height: number
-
-  /** User agent */
-  user_agent: string
-
-  /** Timezone */
-  timezone: string
-
-  /** Telegram WebApp version */
-  telegram_version?: string
-
-  /** Theme (from Telegram WebApp) */
+  /** Theme: "light" or "dark" */
   theme?: string
 }
 
 /**
  * Event properties (user-defined)
  */
-export type EventProperties = Record<string, any>
+export type EventProperties = Record<string, unknown>
 
 /**
- * Full event payload
+ * WebApp event payload (backend contract)
  */
-export interface DashgramEvent {
-  /** Event name */
-  event: string
+export interface WebAppEvent {
+  /** Event ID - MUST be UUID */
+  eventId: string
 
-  /** Custom properties */
-  properties: EventProperties
+  /** Event type/name */
+  type: string
 
-  /** ISO 8601 timestamp */
-  timestamp: string
+  /** Raw Telegram initData string (passed as-is) */
+  initData: string
 
-  /** Event source */
-  source: EventSource
+  /** Custom event properties */
+  properties?: unknown
 
-  /** Track level */
-  level: TrackLevel
+  /** Telemetry data */
+  telemetry?: Telemetry
 
-  /** Session ID */
-  session_id: string
+  /** Event source: "auto" or "manual" */
+  source?: string
 
-  /** User ID (Telegram user ID or null) */
-  user_id: string | null
+  /** Track level that captured this event */
+  level?: number
 
-  /** Event context */
-  context: EventContext
+  /** Timestamp in unix milliseconds */
+  timestamp: number
 }
 
 /**
- * User traits for identification
+ * Track request payload (backend contract)
  */
-export type UserTraits = Record<string, any>
+export interface WebAppTrackRequest {
+  /** Origin URL */
+  origin?: string
+
+  /** Array of events to track */
+  updates: WebAppEvent[]
+}
 
 /**
  * Telegram WebApp interface (simplified)
  * Based on official Telegram Mini Apps API
  */
 export interface TelegramWebApp {
+  /** Raw init data string */
+  initData?: string
+
+  /** Parsed init data (unsafe, not validated) */
   initDataUnsafe?: {
     user?: {
       id: number
@@ -133,6 +122,7 @@ export interface TelegramWebApp {
       language_code?: string
     }
   }
+
   platform?: string
   version?: string
   themeParams?: Record<string, string>
@@ -214,22 +204,22 @@ export interface TelegramWebApp {
   }
 
   // Event methods
-  onEvent?: (event: string, callback: (eventType: string, eventData?: any) => void) => void
-  offEvent?: (event: string, callback: (eventType: string, eventData?: any) => void) => void
+  onEvent?: (event: string, callback: (eventType: string, eventData?: unknown) => void) => void
+  offEvent?: (event: string, callback: (eventType: string, eventData?: unknown) => void) => void
 
   // Methods (used for patching)
   openLink?: (url: string, options?: { try_instant_view?: boolean }) => void
   openTelegramLink?: (url: string) => void
   switchInlineQuery?: (query: string, chooseChatTypes?: string[]) => void
-  shareToStory?: (mediaUrl: string, params?: any) => void
+  shareToStory?: (mediaUrl: string, params?: unknown) => void
   close?: (options?: { return_back?: boolean }) => void
   exitFullscreen?: () => void
   openInvoice?: (slug: string, callback?: (status: string) => void) => void
   requestAccess?: (accessType: string, callback?: (status: string) => void) => void
   requestContact?: (callback?: (status: string) => void) => void
   requestPhone?: (callback?: (status: string) => void) => void
-  requestLocation?: (callback?: (status: string, location?: any) => void) => void
-  checkLocation?: (callback?: (isAvailable: boolean, location?: any) => void) => void
+  requestLocation?: (callback?: (status: string, location?: unknown) => void) => void
+  checkLocation?: (callback?: (isAvailable: boolean, location?: unknown) => void) => void
 }
 
 /**

@@ -20,12 +20,11 @@ export function isTelegramMiniApp(): boolean {
 }
 
 /**
- * Get Telegram user ID
+ * Get raw Telegram initData string (passed as-is to backend)
  */
-export function getTelegramUserId(): string | null {
+export function getTelegramInitData(): string {
   const webApp = getTelegramWebApp()
-  const userId = webApp?.initDataUnsafe?.user?.id
-  return userId ? String(userId) : null
+  return webApp?.initData || ""
 }
 
 /**
@@ -37,66 +36,53 @@ export function getTelegramPlatform(): string {
 }
 
 /**
- * Get Telegram version
+ * Get Telegram theme (light/dark)
  */
-export function getTelegramVersion(): string {
+export function getTelegramTheme(): string | undefined {
   const webApp = getTelegramWebApp()
-  return webApp?.version || "unknown"
-}
 
-/**
- * Get Telegram user language
- */
-export function getTelegramLanguage(): string | null {
-  const webApp = getTelegramWebApp()
-  return webApp?.initDataUnsafe?.user?.language_code || null
-}
-
-/**
- * Get Telegram theme
- */
-export function getTelegramTheme(): string {
-  const webApp = getTelegramWebApp()
-  if (!webApp?.themeParams) {
-    return "unknown"
+  // Use colorScheme directly if available
+  if (webApp?.colorScheme) {
+    return webApp.colorScheme
   }
 
-  // Check if theme is dark based on background color
-  const bgColor = webApp.themeParams.bg_color || ""
-  if (bgColor) {
-    // Simple heuristic: check if background is dark
-    const rgb = parseInt(bgColor.slice(1), 16)
-    const r = (rgb >> 16) & 0xff
-    const g = (rgb >> 8) & 0xff
-    const b = (rgb >> 0) & 0xff
-    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
-    return luma < 128 ? "dark" : "light"
+  // Fallback: detect from themeParams
+  if (webApp?.themeParams?.bg_color) {
+    const bgColor = webApp.themeParams.bg_color
+    try {
+      const rgb = parseInt(bgColor.slice(1), 16)
+      const r = (rgb >> 16) & 0xff
+      const g = (rgb >> 8) & 0xff
+      const b = (rgb >> 0) & 0xff
+      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
+      return luma < 128 ? "dark" : "light"
+    } catch {
+      return undefined
+    }
   }
 
-  return "unknown"
+  return undefined
 }
 
 /**
  * Subscribe to Telegram WebApp events
- * Handles both camelCase and snake_case event names for compatibility
  */
-export function subscribeToTelegramEvent(event: string, callback: (eventData?: any) => void): () => void {
+export function subscribeToTelegramEvent(event: string, callback: (eventData?: unknown) => void): () => void {
   const webApp = getTelegramWebApp()
 
   if (!webApp || !webApp.onEvent) {
-    // Return no-op unsubscribe if WebApp is not available
     return () => {}
   }
 
   try {
-    // Telegram WebApp onEvent signature: (eventType, callback) where callback receives (eventType, eventData)
-    const wrappedCallback = (_eventType: string, eventData?: any) => {
+    const wrappedCallback = (_eventType: string, eventData?: unknown) => {
       try {
         callback(eventData)
       } catch (error) {
-        // Don't let callback errors break the SDK
-        // Only log in debug mode to avoid console pollution
-        if (typeof window !== "undefined" && (window as any).__DASHGRAM_DEBUG__) {
+        if (
+          typeof window !== "undefined" &&
+          (window as typeof window & { __DASHGRAM_DEBUG__?: boolean }).__DASHGRAM_DEBUG__
+        ) {
           console.warn(`[Dashgram] Error in Telegram event callback for ${event}:`, error)
         }
       }
@@ -104,19 +90,16 @@ export function subscribeToTelegramEvent(event: string, callback: (eventData?: a
 
     webApp.onEvent(event, wrappedCallback)
 
-    // Return unsubscribe function
     return () => {
       try {
         if (webApp.offEvent) {
           webApp.offEvent(event, wrappedCallback)
         }
-      } catch (error) {
+      } catch {
         // Ignore unsubscribe errors silently
       }
     }
-  } catch (error) {
-    // If event doesn't exist or subscription fails, return no-op silently
-    // Events may not be available in all Telegram versions
+  } catch {
     return () => {}
   }
 }

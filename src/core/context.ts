@@ -1,56 +1,27 @@
-import type { EventContext } from '../types';
-import { getDeviceContext } from '../utils/device';
-import { getTelegramUserId } from '../utils/telegram';
+import type { Telemetry } from "../types"
+import { getTelemetry } from "../utils/device"
 
 /**
- * Context manager - maintains event context
+ * Context manager - maintains telemetry data
  */
 export class Context {
-  private context: EventContext;
-  private userId: string | null;
+  private telemetry: Telemetry
 
   constructor() {
-    this.context = getDeviceContext();
-    this.userId = getTelegramUserId();
+    this.telemetry = getTelemetry()
   }
 
   /**
-   * Get current context
+   * Get current telemetry
    */
-  getContext(): EventContext {
-    return { ...this.context };
+  getTelemetry(): Telemetry {
+    return { ...this.telemetry }
   }
 
   /**
-   * Update context (e.g., after viewport resize)
+   * Update telemetry (e.g., after theme change)
    */
-  updateContext(): void {
-    this.context = getDeviceContext();
-  }
-
-  /**
-   * Get user ID
-   */
-  getUserId(): string | null {
-    return this.userId;
-  }
-
-  /**
-   * Set user ID (for identify())
-   */
-  setUserId(userId: string): void {
-    this.userId = userId;
-  }
-
-  /**
-   * Clear user ID
-   */
-  clearUserId(): void {
-    this.userId = null;
+  updateTelemetry(): void {
+    this.telemetry = getTelemetry()
   }
 }
-
-
-
-
-
