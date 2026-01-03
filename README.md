@@ -7,12 +7,16 @@ Analytics SDK for **Telegram Mini Apps**. Automatically captures user interactio
 
 ## Quick Start
 
+### 1. Add scripts to your HTML
+
 Place these scripts in your HTML before `</head>` closing tag:
 
 ```html
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://unpkg.com/@dashgram/javascript@latest/dist/dashgram.min.js"></script>
 ```
+
+### 2. Initialize Dashgram
 
 Initialize Dashgram inside `<body>`:
 
@@ -29,6 +33,19 @@ Initialize Dashgram inside `<body>`:
 
 - `projectId` — Your project identifier from the [Dashgram dashboard](https://app.dashgram.io). Get it after creating a project.
 - `trackLevel` — Controls which events are automatically captured. See [Track Levels](#track-levels) section below for details.
+
+### 3. Track custom events (optional)
+
+If you want to send custom events to Dashgram, use the `DashgramMini.track()` method.
+Simply call it with an event name and optional properties whenever the action happens.
+
+```javascript
+DashgramMini.track("purchase_completed", {
+  product_id: "premium-plan",
+  price: 100,
+  currency: "TON"
+})
+```
 
 > [!TIP]
 > **Looking for a complete example?** Check out [`examples/basic-usage.html`](examples/basic-usage.html) for a working HTML example with event tracking.
@@ -94,19 +111,6 @@ Choose how much data to collect. Higher levels capture more events but send more
 
 **Use when:** You need detailed performance monitoring and all Telegram WebApp events.
 
-### All Configuration Options
-
-| Option          | Type          | Default | Description                                                |
-| --------------- | ------------- | ------- | ---------------------------------------------------------- |
-| `projectId`     | `string`      | —       | **Required.** Your project ID from Dashgram dashboard      |
-| `trackLevel`    | `1 \| 2 \| 3` | `2`     | Event collection level (see [Track Levels](#track-levels)) |
-| `debug`         | `boolean`     | `false` | Enable debug logging to console                            |
-| `disabled`      | `boolean`     | `false` | Disable all tracking (useful for opt-out)                  |
-| `batchSize`     | `number`      | `10`    | Number of events to batch before sending                   |
-| `flushInterval` | `number`      | `5000`  | Milliseconds between automatic flushes                     |
-| `onError`       | `function`    | —       | Callback for handling errors                               |
-
-
 ## API Reference
 
 ### `DashgramMini.init(config)`
@@ -120,6 +124,18 @@ DashgramMini.init({
 })
 ```
 
+#### All Configuration Options:
+
+| Option          | Type          | Default | Description                                                |
+| --------------- | ------------- | ------- | ---------------------------------------------------------- |
+| `projectId`     | `string`      | —       | **Required.** Your project ID from Dashgram dashboard      |
+| `trackLevel`    | `1 \| 2 \| 3` | `2`     | Event collection level (see [Track Levels](#track-levels)) |
+| `debug`         | `boolean`     | `false` | Enable debug logging to console                            |
+| `disabled`      | `boolean`     | `false` | Disable all tracking (useful for opt-out)                  |
+| `batchSize`     | `number`      | `10`    | Number of events to batch before sending                   |
+| `flushInterval` | `number`      | `5000`  | Milliseconds between automatic flushes                     |
+| `onError`       | `function`    | —       | Callback for handling errors                               |
+
 ### `DashgramMini.track(event, properties)`
 
 Track a custom event with optional properties.
@@ -127,8 +143,8 @@ Track a custom event with optional properties.
 ```typescript
 DashgramMini.track("purchase_completed", {
   product_id: "premium-plan",
-  price: 9.99,
-  currency: "USD"
+  price: 100,
+  currency: "TON"
 })
 ```
 
