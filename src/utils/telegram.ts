@@ -21,10 +21,31 @@ export function isTelegramMiniApp(): boolean {
 
 /**
  * Get raw Telegram initData string (passed as-is to backend)
+ * Tries multiple sources: WebApp.initData, URL parameter tgWebAppData
  */
 export function getTelegramInitData(): string {
   const webApp = getTelegramWebApp()
-  return webApp?.initData || ""
+
+  // Try WebApp.initData first (if available)
+  if (webApp?.initData) {
+    return webApp.initData
+  }
+
+  // Fallback: try to get from URL parameter (tgWebAppData)
+  if (typeof window !== "undefined") {
+    try {
+      const urlParams = new URLSearchParams(window.location.search)
+      const tgWebAppData = urlParams.get("tgWebAppData")
+      if (tgWebAppData) {
+        return decodeURIComponent(tgWebAppData)
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+  }
+
+  // If neither available, return empty string
+  return ""
 }
 
 /**

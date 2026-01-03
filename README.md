@@ -1,67 +1,56 @@
 # Dashgram JavaScript SDK
 
-Analytics SDK for **Telegram Mini Apps**. Automatically captures user interactions and sends events to the Dashgram backend.
+Analytics SDK for **Telegram Mini Apps**. Automatically captures user interactions and sends events to the Dashgram.
 
-> ⚠️ **Important**: This SDK is designed exclusively for **Telegram Mini Apps** (WebApps).
-> It is **NOT** for Telegram bots. For bot analytics, use the [Python SDK](../sdk-python) or [Go SDK](../go-dashgram).
-
-## Installation
-
-```bash
-npm install @dashgram/javascript
-# or
-pnpm add @dashgram/javascript
-# or
-yarn add @dashgram/javascript
-```
+> [!NOTE]
+> This SDK is for **Telegram Mini Apps** built with JavaScript/TypeScript. For Telegram bots or Mini Apps in other languages, see our [other SDKs](https://docs.dashgram.io/sdk).
 
 ## Quick Start
 
-```typescript
-import DashgramMini from "@dashgram/javascript"
+Place these scripts in your HTML before `</head>` closing tag:
 
-// Initialize SDK
-DashgramMini.init({
-  projectId: "your-project-id",
-  trackLevel: 2, // 1 = core, 2 = interactions, 3 = deep analytics
-  debug: true // Enable in development
-})
-
-// Track custom events
-DashgramMini.track("purchase_completed", {
-  product_id: "premium-plan",
-  price: 9.99,
-  currency: "USD"
-})
+```html
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@dashgram/javascript@latest/dist/dashgram.min.js"></script>
 ```
 
-## Configuration
+Initialize Dashgram inside `<body>`:
 
-```typescript
-DashgramMini.init({
-  projectId: "your-project-id", // Required
-  trackLevel: 2, // Optional: 1, 2, or 3 (default: 1)
-  debug: false, // Optional: enable console logs
-  disabled: false, // Optional: disable tracking entirely
-  batchSize: 10, // Optional: events per batch
-  flushInterval: 5000 // Optional: flush interval in ms
-})
+```html
+<script>
+  DashgramMini.init({
+    projectId: "your-project-id",
+    trackLevel: 2
+  })
+</script>
 ```
+
+**Configuration parameters:**
+
+- `projectId` — Your project identifier from the [Dashgram dashboard](https://app.dashgram.io). Get it after creating a project.
+- `trackLevel` — Controls which events are automatically captured. See [Track Levels](#track-levels) section below for details.
+
+> [!TIP]
+> **Looking for a complete example?** Check out [`examples/basic-usage.html`](examples/basic-usage.html) for a working HTML example with event tracking.
 
 ## Track Levels
 
-### Level 1 — Core (Default)
+Choose how much data to collect. Higher levels capture more events but send more data.
 
-Minimal tracking:
+### Level 1 — Core
+
+**Minimal tracking** — Basic app lifecycle events only.
 
 | Event       | Description                       |
 | ----------- | --------------------------------- |
 | `app_open`  | Mini App opened or became visible |
 | `app_close` | Mini App closed or hidden         |
 
+**Use when:** You only need basic usage metrics.
+
 ### Level 2 — Interactions
 
-Adds user interaction tracking:
+**Standard tracking** — Level 1 + user interactions.
 
 | Event                 | Description                      |
 | --------------------- | -------------------------------- |
@@ -78,9 +67,11 @@ Adds user interaction tracking:
 | `js_error`            | JavaScript errors                |
 | `unhandled_rejection` | Unhandled Promise rejections     |
 
+**Use when:** You want standard web analytics (recommended for most apps).
+
 ### Level 3 — Deep Analytics
 
-Adds performance and Telegram-specific tracking:
+**Comprehensive tracking** — Level 1 + 2 + performance metrics + all Telegram events.
 
 | Event                            | Description                    |
 | -------------------------------- | ------------------------------ |
@@ -101,100 +92,81 @@ Adds performance and Telegram-specific tracking:
 | `telegram_invoice_closed`        | Invoice closed                 |
 | ...and all other Telegram events |                                |
 
-## API
+**Use when:** You need detailed performance monitoring and all Telegram WebApp events.
+
+### All Configuration Options
+
+| Option          | Type          | Default | Description                                                |
+| --------------- | ------------- | ------- | ---------------------------------------------------------- |
+| `projectId`     | `string`      | —       | **Required.** Your project ID from Dashgram dashboard      |
+| `trackLevel`    | `1 \| 2 \| 3` | `2`     | Event collection level (see [Track Levels](#track-levels)) |
+| `debug`         | `boolean`     | `false` | Enable debug logging to console                            |
+| `disabled`      | `boolean`     | `false` | Disable all tracking (useful for opt-out)                  |
+| `batchSize`     | `number`      | `10`    | Number of events to batch before sending                   |
+| `flushInterval` | `number`      | `5000`  | Milliseconds between automatic flushes                     |
+| `onError`       | `function`    | —       | Callback for handling errors                               |
+
+
+## API Reference
 
 ### `DashgramMini.init(config)`
 
-Initialize the SDK. Call once when your app loads.
-
-### `DashgramMini.track(event, properties)`
-
-Track a custom event.
+Initialize the SDK. Must be called once when your app loads.
 
 ```typescript
-DashgramMini.track("checkout_started", {
-  cart_value: 49.99,
-  item_count: 3
+DashgramMini.init({
+  projectId: "your-project-id",
+  trackLevel: 2
 })
 ```
 
-### `DashgramMini.setTrackLevel(level)`
+### `DashgramMini.track(event, properties)`
 
-Change the track level at runtime.
+Track a custom event with optional properties.
 
 ```typescript
-DashgramMini.setTrackLevel(3) // Enable deep analytics
+DashgramMini.track("purchase_completed", {
+  product_id: "premium-plan",
+  price: 9.99,
+  currency: "USD"
+})
 ```
+
+**Parameters:**
+
+- `event` — Event name (string)
+- `properties` — Optional event properties (object)
 
 ### `DashgramMini.flush()`
 
-Force send all pending events.
+Force send all pending events immediately. Returns a Promise.
 
 ```typescript
 await DashgramMini.flush()
 ```
 
+**Use cases:**
+
+- Before page unload
+- After critical user actions
+- When switching users
+
 ### `DashgramMini.shutdown()`
 
-Stop tracking and clean up.
+Stop tracking and clean up resources.
 
 ```typescript
 DashgramMini.shutdown()
 ```
 
-## User Identification
+## Contributing
 
-User identification is handled **automatically** via Telegram's `initData`. The SDK sends the raw `initData` string with every event, allowing the backend to validate and extract user information securely.
-
-You do **not** need to call any identify method.
-
-## How It Works
-
-1. SDK captures events based on `trackLevel`
-2. Events are batched for efficiency
-3. Each event includes:
-   - `eventId`: UUID for deduplication
-   - `type`: Event name
-   - `initData`: Raw Telegram initData (for backend validation)
-   - `properties`: Custom event data
-   - `telemetry`: Platform, user agent, timezone, theme
-   - `timestamp`: Unix milliseconds
-4. Events are sent to `POST /v1/{projectId}/webapp/track`
-
-## TypeScript Support
-
-Full TypeScript support with exported types:
-
-```typescript
-import type { DashgramConfig, WebAppEvent, EventProperties, TrackLevel } from "@dashgram/javascript"
-```
-
-## Error Handling
-
-```typescript
-import { DashgramMini, DashgramAPIError, NetworkError } from "@dashgram/javascript"
-
-DashgramMini.init({
-  projectId: "your-project-id",
-  onError: error => {
-    if (error instanceof NetworkError) {
-      console.log("Network issue:", error.message)
-    } else if (error instanceof DashgramAPIError) {
-      console.log("API error:", error.statusCode, error.details)
-    }
-  }
-})
-```
-
-## Browser Support
-
-- Chrome 64+
-- Firefox 67+
-- Safari 12+
-- Edge 79+
-
-Works in all environments that support Telegram Mini Apps.
+Contributions are welcome! Please open issues or pull requests on the [GitHub repository](https://github.com/dashgram/dashgram-javascript).
 
 ## License
 
-MIT
+This project is licensed under the MIT License. See the LICENSE file for more information.
+
+## Contact
+
+For questions or support, reach out to us at [team@dashgram.io](mailto:team@dashgram.io) or visit our [website](https://dashgram.io).

@@ -62,3 +62,12 @@ export function getCurrentOrigin(): string {
 
   return window.location.origin
 }
+
+import { LIBRARY_ORIGIN } from "../version"
+
+/**
+ * Get library identifier (name + version)
+ */
+export function getLibraryOrigin(): string {
+  return LIBRARY_ORIGIN
+}

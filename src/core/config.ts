@@ -5,7 +5,7 @@ import { DashgramConfigurationError } from "../errors"
  * Default configuration
  */
 const DEFAULT_CONFIG: Required<Omit<DashgramConfig, "projectId" | "onError">> = {
-  trackLevel: 1,
+  trackLevel: 2,
   apiUrl: "https://api.dashgram.io/v1",
   batchSize: 10,
   flushInterval: 5000, // 5 seconds

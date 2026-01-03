@@ -2,7 +2,7 @@ import type { WebAppEvent, WebAppTrackRequest } from "../types"
 import type { Config } from "../core/config"
 import { safeStringify } from "../utils/helpers"
 import { DashgramAPIError, NetworkError } from "../errors"
-import { getCurrentOrigin } from "../utils/device"
+import { getLibraryOrigin } from "../utils/device"
 
 /**
  * Transport layer - sends events to backend
@@ -43,7 +43,7 @@ export class Transport {
    */
   private buildPayload(events: WebAppEvent[]): WebAppTrackRequest {
     return {
-      origin: getCurrentOrigin() || undefined,
+      origin: getLibraryOrigin(),
       updates: events
     }
   }

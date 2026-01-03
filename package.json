@@ -1,6 +1,6 @@
 {
   "name": "@dashgram/javascript",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Dashgram Analytics SDK for Telegram Mini Apps",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -20,8 +20,9 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
+    "generate:version": "node scripts/generate-version.js",
+    "build": "npm run generate:version && tsc",
+    "dev": "npm run generate:version && tsc --watch",
     "build:umd": "rollup -c",
     "build:all": "npm run build && npm run build:umd",
     "prepublishOnly": "npm run build:all"
