@@ -7,7 +7,7 @@ import { CoreTracker } from "./trackers/core-tracker"
 import { InteractionTracker } from "./trackers/interaction-tracker"
 import { DeepTracker } from "./trackers/deep-tracker"
 import { generateUUID, isBrowser } from "./utils/helpers"
-import { getTelegramUnsafeInitData } from "./utils/telegram"
+import { getTelegramUnsafeInitData, isTelegramMiniApp } from "./utils/telegram"
 import { UserTraits } from "@dashgram/javascript"
 import { DashgramEvent } from "@dashgram/javascript"
 
@@ -103,6 +103,14 @@ class DashgramSDK {
   track(event: string, properties: EventProperties = {}): void {
     this.ensureInitialized()
 
+    // Don't track events if not running in Telegram WebApp
+    if (!isTelegramMiniApp()) {
+      if (this.config?.isDebug()) {
+        this.log("Skipping event (not in Telegram WebApp)", { event, properties })
+      }
+      return
+    }
+
     const fullEvent = this.buildEvent(event, properties, "manual")
     this.batchProcessor!.addEvent(fullEvent)
 
@@ -114,6 +122,11 @@ class DashgramSDK {
    */
   private trackAuto(event: string, properties: EventProperties = {}): void {
     if (!this.isInitialized) return
+
+    // Don't track events if not running in Telegram WebApp
+    if (!isTelegramMiniApp()) {
+      return
+    }
 
     const fullEvent = this.buildEvent(event, properties, "auto")
     this.batchProcessor!.addEvent(fullEvent)
