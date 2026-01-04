@@ -3,6 +3,7 @@ import type { Config } from "../core/config"
 import { safeStringify, convertToSnakeCase } from "../utils/helpers"
 import { DashgramAPIError, NetworkError } from "../errors"
 import { getLibraryOrigin } from "../utils/device"
+import { isTelegramMiniApp } from "../utils/telegram"
 
 /**
  * Transport layer - sends events to backend
@@ -55,6 +56,12 @@ export class Transport {
    */
   async send(events: WebAppEvent[]): Promise<void> {
     if (events.length === 0) {
+      return
+    }
+
+    // Don't send events if not running in Telegram WebApp
+    if (!isTelegramMiniApp()) {
+      this.log("Not in Telegram WebApp, skipping send")
       return
     }
 
@@ -141,6 +148,12 @@ export class Transport {
    */
   sendBeacon(events: WebAppEvent[]): boolean {
     if (events.length === 0) {
+      return true
+    }
+
+    // Don't send events if not running in Telegram WebApp
+    if (!isTelegramMiniApp()) {
+      this.log("Not in Telegram WebApp, skipping sendBeacon")
       return true
     }
 
