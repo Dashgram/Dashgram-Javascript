@@ -14,9 +14,17 @@ export function getTelegramWebApp(): TelegramWebApp | null {
 
 /**
  * Check if running inside Telegram Mini App
+ * Requires initDataUnsafe or initData to be present (user must be authenticated in Telegram)
  */
 export function isTelegramMiniApp(): boolean {
-  return getTelegramWebApp() !== null
+  const webApp = getTelegramWebApp()
+  if (!webApp) {
+    return false
+  }
+
+  // If initDataUnsafe doesn't exist, user is 100% not in Telegram WebApp
+  // Also check initData as fallback (some versions might only have initData)
+  return !!(webApp.initDataUnsafe || webApp.initData)
 }
 
 /**
